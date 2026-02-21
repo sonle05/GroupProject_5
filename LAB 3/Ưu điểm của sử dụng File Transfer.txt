@@ -1,8 +1,0 @@
-Ưu điểm của sử dụng File Transfer:
-- Dễ sử dụng, dễ thao tác, cấu hình đơn giản
-- Ổn định
-- Chỉ sử dụng khi thao tác nội bộ
-
-Nhược điểm:
-- Bảo mật kém
-- Tốc độ phản hồi chậm
