@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "product": "Laptop Dell",
+        "amount": 1500,
+        "status": "CONFIRMED"
+    },
+    {
+        "id": 2,
+        "product": "Laptop Dell",
+        "amount": 1500,
+        "status": "CONFIRMED"
+    },
+    {
+        "id": 3,
+        "product": "Laptop Dell",
+        "amount": 1500,
+        "status": "CONFIRMED"
+    }
+]
