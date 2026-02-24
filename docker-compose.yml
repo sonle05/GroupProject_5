@@ -1,21 +1,18 @@
 services:
-  # --- HẠ TẦNG CHUNG (Lê Ngọc Sơn quản lý) ---
-  
-  # 🛒 Dữ liệu Bán hàng (Dành cho module của Hòa và Tài)
+  # --- HẠ TẦNG CHUNG ---
   mysql-store:
     image: mysql:8.0
     container_name: web-store-db
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: web_store
-    ports:
-      - "3306:3306"
+    # ports: - "3306:3306"  <-- NÊN ẨN ĐI ĐỂ BẢO MẬT
     networks:
       - internal-bridge
     volumes:
       - store_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Tự động nạp 20,000 đơn hàng
 
-  # 💰 Dữ liệu Tài chính (Dành cho module của Đức)
   postgres-finance:
     image: postgres:15
     container_name: finance-db
@@ -23,55 +20,48 @@ services:
       POSTGRES_USER: finance_admin
       POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD} 
       POSTGRES_DB: finance_db
-    ports:
-      - "5432:5432"
     networks:
       - internal-bridge
     volumes:
       - finance_data:/var/lib/postgresql/data
 
-  # 📩 Message Broker (Kết nối các module của Tài, Hòa, Đức)
   rabbitmq:
     image: rabbitmq:3-management
     container_name: message-broker
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "15672:15672" # Chỉ mở port quản lý để bạn theo dõi hàng đợi
     networks:
       - internal-bridge
 
-  # 🛡️ API Gateway (Sơn quản lý để bảo mật luồng ra vào)
-  kong:
+  api-gateway:
     image: kong:latest
     container_name: api-gateway
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
-      KONG_PROXY_ACCESS_LOG: /dev/stdout
-      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
     ports:
-      - "8000:8000"
-      - "8001:8001"
+      - "8000:8000" # Cửa duy nhất cho khách hàng
+      - "8001:8001" # Cổng admin (chỉ dùng để cấu hình)
     networks:
       - internal-bridge
       - public-net
     volumes:
       - ./kong.yml:/usr/local/kong/declarative/kong.yml
 
-  # --- CÁC MODULE CỦA THÀNH VIÊN (Ghép vào đây) ---
-
-  # 1. Module Đồng bộ kho - Đỗ Thanh Tài
+  # --- CÁC MODULE THÀNH VIÊN ---
   sync-service:
     build: ./module-1-sync
     container_name: module-sync
     depends_on:
       - mysql-store
-      - rabbitmq
     networks:
       - internal-bridge
+    volumes:
+      - ./input:/app/input         # Tài bỏ file CSV vào đây
+      - ./processed:/app/processed # Code của Tài tự move file sang đây
 
-  # 2. Module Xử lý đơn hàng - Nguyễn Phú Hòa
   orders-service:
     build: ./module-2-orders
     container_name: module-orders
@@ -81,13 +71,12 @@ services:
     networks:
       - internal-bridge
 
-  # 3. Module Trung tâm chỉ huy - Nguyễn Thành Đức
   control-center-service:
     build: ./module-3-control-center
     container_name: module-control
     depends_on:
       - postgres-finance
-      - rabbitmq
+      - mysql-store
     networks:
       - internal-bridge
 
