@@ -1,5 +1,7 @@
 services:
-  # 🛒 Dữ liệu Bán hàng (Web Store)
+  # --- HẠ TẦNG CHUNG (Lê Ngọc Sơn quản lý) ---
+  
+  # 🛒 Dữ liệu Bán hàng (Dành cho module của Hòa và Tài)
   mysql-store:
     image: mysql:8.0
     container_name: web-store-db
@@ -13,13 +15,13 @@ services:
     volumes:
       - store_data:/var/lib/mysql
 
-  # 💰 Dữ liệu Tài chính (Finance)
+  # 💰 Dữ liệu Tài chính (Dành cho module của Đức)
   postgres-finance:
     image: postgres:15
     container_name: finance-db
     environment:
       POSTGRES_USER: finance_admin
-      MYSQL_ROOT_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD} 
       POSTGRES_DB: finance_db
     ports:
       - "5432:5432"
@@ -28,17 +30,17 @@ services:
     volumes:
       - finance_data:/var/lib/postgresql/data
 
-  # 📩 Trung chuyển tin nhắn (Message Broker)
+  # 📩 Message Broker (Kết nối các module của Tài, Hòa, Đức)
   rabbitmq:
     image: rabbitmq:3-management
     container_name: message-broker
     ports:
-      - "5672:5672"   # Cổng kết nối code
-      - "15672:15672" # Cổng giao diện quản lý (Guest/Guest)
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - internal-bridge
 
-  # 🛡️ Cổng bảo mật (API Gateway)
+  # 🛡️ API Gateway (Sơn quản lý để bảo mật luồng ra vào)
   kong:
     image: kong:latest
     container_name: api-gateway
@@ -56,6 +58,38 @@ services:
       - public-net
     volumes:
       - ./kong.yml:/usr/local/kong/declarative/kong.yml
+
+  # --- CÁC MODULE CỦA THÀNH VIÊN (Ghép vào đây) ---
+
+  # 1. Module Đồng bộ kho - Đỗ Thanh Tài
+  sync-service:
+    build: ./module-1-sync
+    container_name: module-sync
+    depends_on:
+      - mysql-store
+      - rabbitmq
+    networks:
+      - internal-bridge
+
+  # 2. Module Xử lý đơn hàng - Nguyễn Phú Hòa
+  orders-service:
+    build: ./module-2-orders
+    container_name: module-orders
+    depends_on:
+      - mysql-store
+      - rabbitmq
+    networks:
+      - internal-bridge
+
+  # 3. Module Trung tâm chỉ huy - Nguyễn Thành Đức
+  control-center-service:
+    build: ./module-3-control-center
+    container_name: module-control
+    depends_on:
+      - postgres-finance
+      - rabbitmq
+    networks:
+      - internal-bridge
 
 networks:
   internal-bridge:
