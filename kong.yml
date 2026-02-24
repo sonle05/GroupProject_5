@@ -2,16 +2,36 @@ _format_version: "3.0"
 _transform: true
 
 services:
-  - name: store-service
-    url: http://httpbin.org/get # Đây là giả lập cho Service Bán hàng
+  # 1. Kết nối đến Module 2 (Nguyễn Phú Hòa)
+  - name: order-service
+    url: http://module-orders:5000 # Trỏ về container name và port của Hòa
     routes:
-      - name: store-route
+      - name: order-route
         paths:
-          - /store
+          - /orders
+    plugins:
+      - name: key-auth
+      - name: rate-limiting
+        config:
+          minute: 10
+          policy: local
 
-  - name: finance-service
-    url: http://httpbin.org/get # Đây là giả lập cho Service Tài chính
+  # 2. Kết nối đến Module 3 (Nguyễn Thành Đức)
+  - name: report-service
+    url: http://module-control:8000 # Trỏ về container name và port của Đức
     routes:
-      - name: finance-route
+      - name: report-route
         paths:
-          - /finance
+          - /report
+    plugins:
+      - name: key-auth
+      - name: rate-limiting
+        config:
+          minute: 10
+          policy: local
+
+# Định nghĩa Key cho người dùng (Consumer)
+consumers:
+  - username: team-noah
+    keyauth_credentials:
+      - key: noah-secret-key
