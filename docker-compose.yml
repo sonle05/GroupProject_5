@@ -72,13 +72,15 @@ services:
       - internal-bridge
 
   control-center-service:
-    build: ./module-3-control-center
-    container_name: module-control
-    depends_on:
-      - postgres-finance
-      - mysql-store
-    networks:
-      - internal-bridge
+  build: ./module-3-control-center
+  container_name: module-control
+  depends_on:
+    - postgres-finance
+    - mysql-store
+  ports:
+    - "5002:5002"
+  networks:
+    - internal-bridge
 
 networks:
   internal-bridge:
