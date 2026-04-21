@@ -53,7 +53,7 @@ services:
 
   # --- CÁC MODULE THÀNH VIÊN ---
   sync-service:
-    build: ./module-1-sync
+    build: ./module-1-inventory-sync
     container_name: module-sync
     depends_on:
       - mysql-store
@@ -64,7 +64,7 @@ services:
       - ./processed:/app/processed
 
   orders-service:
-    build: ./module-2-orders
+    build: ./module-2-orders-processing
     container_name: module-orders
     depends_on:
       - mysql-store
