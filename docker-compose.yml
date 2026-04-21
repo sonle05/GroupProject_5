@@ -1,24 +1,25 @@
+version: '3.8'
+
 services:
   # --- HẠ TẦNG CHUNG ---
   mysql-store:
     image: mysql:8.0
     container_name: web-store-db
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: web_store
-    # ports: - "3306:3306"  <-- NÊN ẨN ĐI ĐỂ BẢO MẬT
     networks:
       - internal-bridge
     volumes:
       - store_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Tự động nạp 20,000 đơn hàng
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   postgres-finance:
     image: postgres:15
     container_name: finance-db
     environment:
       POSTGRES_USER: finance_admin
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD} 
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD:-rootpassword}
       POSTGRES_DB: finance_db
     networks:
       - internal-bridge
@@ -29,7 +30,7 @@ services:
     image: rabbitmq:3-management
     container_name: message-broker
     ports:
-      - "15672:15672" # Chỉ mở port quản lý để bạn theo dõi hàng đợi
+      - "15672:15672" # Quản lý UI cho nhóm theo dõi
     networks:
       - internal-bridge
 
@@ -42,8 +43,8 @@ services:
       KONG_PROXY_LISTEN: 0.0.0.0:8000
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
     ports:
-      - "8000:8000" # Cửa duy nhất cho khách hàng
-      - "8001:8001" # Cổng admin (chỉ dùng để cấu hình)
+      - "8000:8000" # Cổng duy nhất cho Client truy cập
+      - "8001:8001" # Admin API
     networks:
       - internal-bridge
       - public-net
@@ -59,8 +60,8 @@ services:
     networks:
       - internal-bridge
     volumes:
-      - ./input:/app/input         # Tài bỏ file CSV vào đây
-      - ./processed:/app/processed # Code của Tài tự move file sang đây
+      - ./input:/app/input
+      - ./processed:/app/processed
 
   orders-service:
     build: ./module-2-orders
@@ -70,17 +71,17 @@ services:
       - rabbitmq
     networks:
       - internal-bridge
+    # KHÔNG mở ports trực tiếp ra ngoài
 
   control-center-service:
-  build: ./module-3-control-center
-  container_name: module-control
-  depends_on:
-    - postgres-finance
-    - mysql-store
-  ports:
-    - "5002:5002"
-  networks:
-    - internal-bridge
+    build: ./module-3-control-center
+    container_name: module-control
+    depends_on:
+      - postgres-finance
+      - mysql-store
+    networks:
+      - internal-bridge
+    # Đã xóa ports: "5002:5002" để đảm bảo tính bảo mật của Module 4
 
 networks:
   internal-bridge:
