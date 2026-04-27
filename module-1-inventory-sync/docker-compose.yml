@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # 1. MySQL: Lưu trữ dữ liệu Bán hàng (Đã có) [cite: 21]
+  mysql_db:
+    image: mysql:8.0
+    container_name: mysql_server
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: noah_retail
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # 2. PostgreSQL: Lưu trữ dữ liệu Tài chính (BỔ SUNG) 
+  postgres_db:
+    image: postgres:15
+    container_name: postgres_server
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: finance_db
+    ports:
+      - "5432:5432"
+
+  # 3. RabbitMQ: Message Broker (Đã có) [cite: 23]
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_broker
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  # 4. Kong Gateway: Cổng bảo mật (Đã có) [cite: 24]
+  kong:
+    image: kong:latest
+    container_name: kong_gateway
+    environment:
+      KONG_DATABASE: "off"
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - ./kong.yml:/usr/local/kong/declarative/kong.yml
+
+  # 5. Legacy Adapter: Module 1 (Đã có) [cite: 25]
+  adapter:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: legacy_adapter
+    depends_on:
+      - mysql_db
+    volumes:
+      - ./input:/app/input
+      - ./processed:/app/processed
+    environment:
+      - DB_HOST=mysql_db
+      - DB_NAME=noah_retail
+      - DB_PASS=password
+    restart: always
+
+  # --- CÁC DỊCH VỤ CẦN THÊM CHO MODULE 2 & 3 ---
+
+  # 6. Order API: Nhận đơn hàng và đẩy vào Queue [cite: 52, 60]
+  order_api:
+    build: .
+    container_name: order_api
+    depends_on:
+      - mysql_db
+      - rabbitmq
+    environment:
+      - DB_HOST=mysql_db
+      - RABBITMQ_HOST=rabbitmq
+    # Không expose port ra ngoài, sẽ đi qua Kong ở port 8000 
+
+  # 7. Order Worker: Đọc Queue và ghi vào Postgres [cite: 65, 71]
+  order_worker:
+    build: .
+    container_name: order_worker
+    depends_on:
+      - postgres_db
+      - rabbitmq
+    environment:
+      - POSTGRES_HOST=postgres_db
+      - RABBITMQ_HOST=rabbitmq
+
+  # 8. Report Service: Dashboard gộp dữ liệu (Data Stitching) [cite: 84, 94]
+  report_service:
+    build: .
+    container_name: report_service
+    depends_on:
+      - mysql_db
+      - postgres_db
+    environment:
+      - MYSQL_HOST=mysql_db
+      - POSTGRES_HOST=postgres_db
+
+networks:
+  default:
+    name: noah_retail_network
