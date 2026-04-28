@@ -1,7 +1,21 @@
-CREATE TABLE IF NOT EXISTS products (id INT PRIMARY KEY, name VARCHAR(255), price DECIMAL(10,2), stock INT DEFAULT 0);
-CREATE TABLE IF NOT EXISTS orders (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, product_id INT, quantity INT, total_price DECIMAL(10,2), status VARCHAR(50) DEFAULT 'PENDING', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,    
+    name VARCHAR(255), 
+    price DECIMAL(10,2), 
+    quantity INT DEFAULT 0         
+);
+CREATE TABLE orders (
+    id INT AUTO_INCREMENT PRIMARY KEY, 
+    user_id INT, 
+    product_id INT, 
+    quantity INT, 
+    total_price DECIMAL(10,2), 
+    status VARCHAR(50) DEFAULT 'PENDING', 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
 
-INSERT INTO products (id, name, price, stock) VALUES
+INSERT INTO products (product_id, name, price, quantity) VALUES
 (100, 'Product_100', 219000, 0),
 (101, 'Product_101', 152000, 0),
 (102, 'Product_102', 151000, 0),
