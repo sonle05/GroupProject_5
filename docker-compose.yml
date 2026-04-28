@@ -4,7 +4,7 @@ services:
     image: mysql:8.0
     container_name: web-store-db
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: web_store
     networks:
       - internal-bridge
@@ -17,7 +17,7 @@ services:
     container_name: finance-db
     environment:
       POSTGRES_USER: finance_admin
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD:-rootpassword}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} 
       POSTGRES_DB: finance_db
     networks:
       - internal-bridge
@@ -62,7 +62,7 @@ services:
       - ./processed:/app/processed
 
   orders-service:
-    build: ./module-2-orders-processing
+    build: ./module-2-order-processing/order_api  
     container_name: module-orders
     depends_on:
       - mysql-store
@@ -77,9 +77,12 @@ services:
     depends_on:
       - postgres-finance
       - mysql-store
+    # Đã xóa ports: "5002:5002" để đảm bảo tính bảo mật của Module 4
+    ports:  
+      - "5002:5002"  # THÊM DÒNG NÀY VÀO ĐỂ TRUY CẬP ĐƯỢC localhost:5002
     networks:
       - internal-bridge
-    # Đã xóa ports: "5002:5002" để đảm bảo tính bảo mật của Module 4
+
 
 networks:
   internal-bridge:
