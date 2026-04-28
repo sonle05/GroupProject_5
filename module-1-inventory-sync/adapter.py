@@ -14,9 +14,9 @@ os.makedirs(PROCESSED_DIR, exist_ok=True)
 
 db_config = {
     'user': 'root',
-    'password': '2011',  # Khớp với MYSQL_ROOT_PASSWORD trong compose
-    'host': 'module-sync',      # Tên service trong docker-compose
-    'database': 'noah_retail', # Tên DB trong compose
+    'password': '2011',      # Phải khớp với phần trong file env.example
+    'host': 'mysql-store',           # Phải dùng tên Service của MySQL trong docker-compose
+    'database': 'web_store',         # Phải khớp với biến MYSQL_DATABASE
     'port': 3306
 }
 
