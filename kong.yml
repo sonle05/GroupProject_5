@@ -9,32 +9,29 @@ services:
       - name: order-route
         paths:
           - /orders
-        strip_path: true  # Giúp Backend nhận request tại "/", tránh lỗi 404 nếu Backend không code route /orders
-    plugins:
-      - name: key-auth
-        config: {}
-      - name: rate-limiting
-        config:
-          minute: 10
-          policy: local
+        strip_path: false
 
   # 2. Kết nối đến Module 3 (Nguyễn Thành Đức)
   - name: report-service
-    url: http://module-control:8000
+    url: http://module-control:5002
     routes:
       - name: report-route
         paths:
-          - /report
-        strip_path: true
-    plugins:
-      - name: key-auth
-        config: {}
-      - name: rate-limiting
-        config:
-          minute: 10
-          policy: local
+          - /api/report
+        strip_path: false
 
-# Định nghĩa Key cho người dùng
+# Cấu hình Plugins
+plugins:
+  - name: key-auth
+    config:
+      key_names: 
+        - apikey
+  - name: rate-limiting
+    config:
+      minute: 10
+      policy: local
+
+# Định nghĩa người dùng hợp lệ
 consumers:
   - username: team-noah
     keyauth_credentials:
